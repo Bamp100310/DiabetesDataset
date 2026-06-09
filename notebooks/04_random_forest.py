@@ -41,13 +41,13 @@ def train_model(X_train, y_train):
         "bootstrap": [True],
     }
 
-    rf = RandomForestClassifier(random_state=42, n_jobs=-1)
+    rf = RandomForestClassifier(random_state=42, n_jobs=1)
     search = RandomizedSearchCV(
-        rf, param_dist, n_iter=30, cv=3, scoring="f1",
-        random_state=42, n_jobs=-1, verbose=1,
+        rf, param_dist, n_iter=5, cv=3, scoring="f1",
+        random_state=42, n_jobs=1, verbose=1,
     )
 
-    print("Buscando hiperparametros (30 iter, 3-fold)...")
+    print("Buscando hiperparametros (5 iter, 3-fold)...")
     t0 = time.time()
     search.fit(X_train, y_train)
     elapsed = time.time() - t0
@@ -130,7 +130,7 @@ def cross_validation(model, X_train, y_train):
     print("Validacion cruzada 5-fold:")
     cv_results = {}
     for metric in ["accuracy", "precision", "recall", "f1", "roc_auc"]:
-        scores = cross_val_score(model, X_train, y_train, cv=5, scoring=metric, n_jobs=-1)
+        scores = cross_val_score(model, X_train, y_train, cv=5, scoring=metric, n_jobs=1)
         cv_results[metric] = {"mean": scores.mean(), "std": scores.std(), "scores": scores}
         print(f"  {metric}: {scores.mean():.4f} +/- {scores.std():.4f}")
     return cv_results
