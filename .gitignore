@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Entornos
+.env
+.venv
+env/
+venv/
+
+# Datos (demasiado grandes para Git)
+data/
+models/
+results/
+
+# Figuras generadas (se regeneran ejecutando los scripts)
+figures/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+tectonic.exe
+
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# LaTeX auxiliares
+report/*.aux
+report/*.log
+report/*.out
+report/*.bbl
+report/*.blg
+report/*.synctex.gz
+report/*.fls
+report/*.fdb_latexmk
+report/*.toc

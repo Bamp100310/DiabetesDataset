@@ -1,0 +1,267 @@
+\documentclass[conference]{IEEEtran}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{float}
+
+\graphicspath{{../figures/}}
+
+\begin{document}
+
+\title{Comparación de Técnicas de Aprendizaje Maquinal para la Predicción de Diabetes: Random Forest, SVM y XGBoost}
+
+\author{
+\IEEEauthorblockN{Brayan Alejandro Muñoz Pérez\IEEEauthorrefmark{1}, Nicolás Pájaro Sánchez\IEEEauthorrefmark{2}, Juan Camilo López Bustos\IEEEauthorrefmark{3}}
+\IEEEauthorblockA{
+Universidad Nacional de Colombia\\
+Introducción Sistemas Inteligentes --- Profesor: Jonatan Gómez Perdomo\\
+\IEEEauthorrefmark{1}bmunozp@unal.edu.co,
+\IEEEauthorrefmark{2}npajaro@unal.edu.co,
+\IEEEauthorrefmark{3}juclopezbu@unal.edu.co}
+}
+
+\maketitle
+
+\begin{abstract}
+En este trabajo se presenta un estudio comparativo de tres técnicas de aprendizaje maquinal aplicadas a la predicción de diabetes: Random Forest, Support Vector Machine (SVM) y XGBoost. Se utilizó el Diabetes Clinical Dataset de Kaggle, compuesto por 100,000 registros con variables demográficas y clínicas. Se realizó un preprocesamiento que incluyó codificación de variables categóricas, escalado de features y balanceo de clases mediante SMOTE. Los modelos fueron evaluados utilizando métricas de accuracy, precision, recall, F1-score y AUC-ROC, además de validación cruzada de 5 pliegues. Los resultados muestran que XGBoost obtuvo el mejor desempeño general con un F1-Score de 0.7958 y un AUC-ROC de 0.9751, seguido por Random Forest (F1: 0.7639, AUC: 0.9707) y SVM (F1: 0.5855, AUC: 0.9591). Además, XGBoost demostró ser el más eficiente computacionalmente con un tiempo de entrenamiento de 40.7 segundos. Este estudio proporciona evidencia sobre la efectividad de diferentes algoritmos de clasificación en el contexto de la predicción de diabetes.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Aprendizaje maquinal, diabetes, clasificación, Random Forest, SVM, XGBoost, predicción
+\end{IEEEkeywords}
+
+\section{Introducción}
+
+La diabetes mellitus es una de las enfermedades crónicas más prevalentes a nivel mundial, afectando a más de 537 millones de adultos según la Federación Internacional de Diabetes \cite{idf2021}. La detección temprana es fundamental para reducir complicaciones como enfermedades cardiovasculares, nefropatía y retinopatía \cite{who2016}.
+
+El aprendizaje maquinal ha emergido como una herramienta poderosa para la predicción de enfermedades, permitiendo identificar patrones complejos en datos clínicos que los métodos estadísticos tradicionales pueden no capturar \cite{kavakiotis2017}. En particular, la predicción de diabetes basada en indicadores clínicos como el índice de masa corporal (BMI), los niveles de hemoglobina glicosilada (HbA1c) y los niveles de glucosa en sangre ha sido un área activa de investigación \cite{zou2018}.
+
+El objetivo de este trabajo es comparar tres técnicas de clasificación — Random Forest, Support Vector Machine (SVM) y XGBoost — para predecir la presencia de diabetes en un dataset de 100,000 registros clínicos. Se busca determinar cuál técnica ofrece el mejor rendimiento predictivo y analizar las fortalezas y debilidades de cada enfoque.
+
+\section{Estado del Arte}
+
+Diversos estudios han abordado la predicción de diabetes mediante aprendizaje maquinal. Kavakiotis et al. \cite{kavakiotis2017} realizaron una revisión sistemática de aplicaciones de machine learning en investigación de diabetes, encontrando que los métodos de ensamble y las SVM presentan los mejores resultados.
+
+Zou et al. \cite{zou2018} compararon decision tree, random forest, y red neuronal para la predicción de diabetes, obteniendo un AUC de 0.82 con Random Forest. Sisodia y Sisodia \cite{sisodia2018} aplicaron Naive Bayes, SVM y Decision Tree al dataset Pima Indians Diabetes, reportando que SVM alcanzó la mayor accuracy de 65.1\%.
+
+Chen y Guestrin \cite{chen2016} introdujeron XGBoost, un sistema de gradient boosting escalable que ha demostrado resultados superiores en múltiples competencias de machine learning y aplicaciones médicas.
+
+Estudios recientes con datasets de mayor escala han mostrado que los métodos de ensamble, particularmente gradient boosting, tienden a superar a otros clasificadores en la predicción de diabetes cuando se dispone de datos suficientes \cite{ogunleye2020}.
+
+\section{Metodología}
+
+\subsection{Dataset}
+
+Se utilizó el \textit{Diabetes Clinical Dataset} disponible en Kaggle, compuesto por 100,000 registros de individuos con información demográfica y clínica. Las variables del dataset son:
+
+\begin{itemize}
+    \item \textbf{Gender}: Género del individuo (categórica)
+    \item \textbf{Age}: Edad en años (numérica)
+    \item \textbf{Hypertension}: Presencia de hipertensión (binaria)
+    \item \textbf{Heart Disease}: Presencia de enfermedad cardíaca (binaria)
+    \item \textbf{Smoking History}: Historial de tabaquismo (categórica)
+    \item \textbf{BMI}: Índice de masa corporal (numérica)
+    \item \textbf{HbA1c Level}: Nivel de hemoglobina glicosilada (numérica)
+    \item \textbf{Blood Glucose Level}: Nivel de glucosa en sangre (numérica)
+    \item \textbf{Diabetes}: Variable objetivo — presencia de diabetes (binaria)
+\end{itemize}
+
+\subsection{Preprocesamiento}
+
+El preprocesamiento incluyó los siguientes pasos:
+
+\begin{enumerate}
+    \item \textbf{Limpieza}: Eliminación de duplicados y manejo de valores faltantes mediante imputación con mediana (variables numéricas) y moda (variables categóricas).
+    \item \textbf{Codificación}: Las variables categóricas (gender, smoking\_history) se codificaron con Label Encoding.
+    \item \textbf{Escalado}: Se aplicó StandardScaler para normalizar las features numéricas a media 0 y desviación estándar 1.
+    \item \textbf{División}: Se separó el dataset en 80\% entrenamiento y 20\% prueba, con estratificación para mantener la proporción de clases.
+    \item \textbf{Balanceo}: Se aplicó SMOTE (Synthetic Minority Over-sampling Technique) \cite{chawla2002} al conjunto de entrenamiento para manejar el desbalance de clases.
+\end{enumerate}
+
+\subsection{Modelos}
+
+\subsubsection{Random Forest}
+Random Forest \cite{breiman2001} es un método de ensamble que construye múltiples árboles de decisión durante el entrenamiento y produce la clase que es la moda de las clases predichas por cada árbol individual. Se realizó búsqueda de hiperparámetros con RandomizedSearchCV evaluando: número de estimadores, profundidad máxima, muestras mínimas para split y para hoja.
+
+\subsubsection{Support Vector Machine (SVM)}
+SVM \cite{cortes1995} busca el hiperplano óptimo que maximiza el margen entre clases. Se utilizó kernel RBF (Radial Basis Function) y se evaluaron los hiperparámetros C (regularización) y gamma. Dado que SVM tiene complejidad computacional $O(n^2)$ a $O(n^3)$, se realizó submuestreo para la búsqueda de hiperparámetros.
+
+\subsubsection{XGBoost}
+XGBoost \cite{chen2016} es una implementación eficiente de gradient boosting que utiliza regularización para prevenir sobreajuste. Se optimizaron hiperparámetros como learning rate, profundidad máxima, subsample y colsample\_bytree. Se utilizó scale\_pos\_weight para manejar el desbalance de clases.
+
+\subsection{Métricas de Evaluación}
+
+Los modelos se evaluaron con las siguientes métricas:
+
+\begin{itemize}
+    \item \textbf{Accuracy}: Proporción de predicciones correctas.
+    \item \textbf{Precision}: Proporción de verdaderos positivos entre predicciones positivas.
+    \item \textbf{Recall}: Proporción de verdaderos positivos entre positivos reales.
+    \item \textbf{F1-Score}: Media armónica de precision y recall.
+    \item \textbf{AUC-ROC}: Área bajo la curva ROC, midiendo la capacidad discriminativa.
+\end{itemize}
+
+Adicionalmente, se realizó validación cruzada de 5 pliegues para estimar la generalización de cada modelo.
+
+\section{Resultados y Discusión}
+
+\subsection{Análisis Exploratorio}
+
+La distribución de la variable objetivo muestra un significativo desbalance: 91.5\% de los individuos son no diabéticos y 8.5\% son diabéticos, lo cual motivó el uso de SMOTE para balancear las clases durante el entrenamiento. La Fig. \ref{fig:class_dist} muestra la distribución de clases del dataset.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{class_distribution.png}
+    \caption{Distribución de clases en el dataset.}
+    \label{fig:class_dist}
+\end{figure}
+
+El análisis de correlación (Fig. \ref{fig:corr}) reveló que las variables con mayor correlación con diabetes son: nivel de glucosa en sangre ($r = +0.4196$), nivel de HbA1c ($r = +0.4007$), edad ($r = +0.2580$), BMI ($r = +0.2144$), hipertensión ($r = +0.1978$) y enfermedad cardíaca ($r = +0.1717$). Las variables de raza y año mostraron correlaciones insignificantes.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{correlation_matrix.png}
+    \caption{Matriz de correlación de variables numéricas.}
+    \label{fig:corr}
+\end{figure}
+
+\subsection{Comparación de Modelos}
+
+La Tabla \ref{tab:comparison} presenta las métricas de evaluación para cada modelo.
+
+\begin{table}[H]
+    \centering
+    \caption{Comparación de métricas de evaluación.}
+    \label{tab:comparison}
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Métrica} & \textbf{Random Forest} & \textbf{SVM} & \textbf{XGBoost} \\
+        \midrule
+        Accuracy  & 0.9612  & 0.8982  & \textbf{0.9695}  \\
+        Precision & 0.7922  & 0.4477  & \textbf{0.9252}  \\
+        Recall    & 0.7376  & \textbf{0.8459}  & 0.6982  \\
+        F1-Score  & 0.7639  & 0.5855  & \textbf{0.7958}  \\
+        AUC-ROC   & 0.9707  & 0.9591  & \textbf{0.9751}  \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{comparison_metrics.png}
+    \caption{Comparación de métricas entre los tres modelos.}
+    \label{fig:metrics}
+\end{figure}
+
+\subsection{Curvas ROC}
+
+La Fig. \ref{fig:roc} presenta las curvas ROC superpuestas de los tres modelos.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{comparison_roc.png}
+    \caption{Curvas ROC comparativas de los tres modelos.}
+    \label{fig:roc}
+\end{figure}
+
+Las tres curvas ROC muestran un buen desempeño discriminativo, con valores de AUC superiores a 0.95. XGBoost alcanzó el mayor AUC (0.9751), seguido por Random Forest (0.9707) y SVM (0.9591). Es notable que aunque SVM tiene el menor AUC, la diferencia con los otros modelos es relativamente pequeña, lo que indica que los tres modelos capturan adecuadamente la separación entre clases. La ventaja de XGBoost se manifiesta especialmente en los rangos medios de la curva ROC, donde mantiene una tasa de verdaderos positivos superior.
+
+\subsection{Feature Importance}
+
+Los modelos basados en árboles (Random Forest y XGBoost) permiten analizar la importancia de las variables (Fig. \ref{fig:fi_rf} y \ref{fig:fi_xgb}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{rf_feature_importance.png}
+    \caption{Importancia de variables — Random Forest.}
+    \label{fig:fi_rf}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{xgb_feature_importance.png}
+    \caption{Importancia de variables — XGBoost.}
+    \label{fig:fi_xgb}
+\end{figure}
+
+Ambos modelos coinciden en identificar el nivel de glucosa en sangre y el nivel de HbA1c como las variables más predictivas, lo cual es coherente con la práctica clínica, ya que estos son los principales biomarcadores utilizados para el diagnóstico de diabetes. El BMI y la edad también aparecen como variables relevantes en ambos modelos. La concordancia entre Random Forest y XGBoost en la identificación de las variables más importantes refuerza la robustez de estos hallazgos. Las variables demográficas como raza y ubicación geográfica mostraron menor importancia predictiva.
+
+\subsection{Tiempos de Entrenamiento}
+
+La Fig. \ref{fig:times} muestra los tiempos de entrenamiento e inferencia.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{comparison_times.png}
+    \caption{Comparación de tiempos de entrenamiento e inferencia.}
+    \label{fig:times}
+\end{figure}
+
+XGBoost demostró ser el modelo más eficiente con un tiempo de entrenamiento de 40.7 segundos y un tiempo de inferencia de 26.56 ms. Random Forest requirió 203.7 segundos de entrenamiento con 66.31 ms de inferencia. SVM fue el modelo más costoso computacionalmente con 720.4 segundos de entrenamiento y 21,576 ms de inferencia, lo cual lo hace impracticable para aplicaciones en tiempo real con este volumen de datos. Considerando que XGBoost también ofrece el mejor rendimiento predictivo, presenta el mejor trade-off entre rendimiento y eficiencia.
+
+\subsection{Discusión}
+
+Los resultados muestran que XGBoost es el modelo más adecuado para la predicción de diabetes en este dataset, superando a Random Forest y SVM en la mayoría de métricas. La superioridad de XGBoost puede atribuirse a su capacidad de regularización (parámetros $\alpha$ y $\lambda$), su manejo eficiente del gradient boosting y la optimización de segundo orden que realiza.
+
+Random Forest, aunque ligeramente inferior a XGBoost, mostró un desempeño sólido y ofrece la ventaja de ser más interpretable y menos sensible a los hiperparámetros. SVM, a pesar de obtener el mayor recall (0.8459), sacrificó significativamente la precision (0.4477), resultando en un F1-Score bajo. Esto se debe a que SVM tiende a generar más falsos positivos al intentar maximizar la detección de casos positivos.
+
+Es importante notar que SVM obtuvo el mejor recall, lo cual podría ser deseable en contextos clínicos donde es preferible identificar todos los posibles casos de diabetes, incluso a costa de falsos positivos. Sin embargo, para un diagnóstico balanceado, XGBoost ofrece el mejor compromiso.
+
+Entre las limitaciones del estudio se encuentran: (i) el uso de Label Encoding para variables categóricas ordinales como la ubicación geográfica, que introduce una relación ordinal artificial, (ii) la posible fuga de información temporal al no separar los datos por año, y (iii) la naturaleza sintética de las muestras generadas por SMOTE.
+
+\section{Conclusiones}
+
+En este trabajo se compararon tres técnicas de aprendizaje maquinal para la predicción de diabetes: Random Forest, SVM y XGBoost. Los principales hallazgos son:
+
+\begin{enumerate}
+    \item XGBoost obtuvo el mejor desempeño general con un F1-Score de 0.7958, AUC-ROC de 0.9751 y accuracy de 96.95\%, superando a Random Forest (F1: 0.7639) y SVM (F1: 0.5855).
+    \item Las variables más predictivas identificadas por los modelos fueron el nivel de glucosa en sangre y el nivel de HbA1c, seguidas por el BMI y la edad, lo cual es coherente con el conocimiento clínico sobre factores de riesgo de diabetes.
+    \item XGBoost demostró ser el más eficiente computacionalmente (40.7s de entrenamiento, 26.56ms de inferencia), mientras que SVM resultó impracticable para datasets de este tamaño (720.4s de entrenamiento, 21.6s de inferencia).
+\end{enumerate}
+
+Como trabajo futuro se sugiere explorar técnicas de deep learning, incorporar ingeniería de features más avanzada, y evaluar la aplicabilidad de estos modelos en entornos clínicos reales.
+
+% Referencias
+
+\begin{thebibliography}{00}
+
+\bibitem{idf2021}
+International Diabetes Federation, ``IDF Diabetes Atlas, 10th Edition,'' 2021. [Online]. Available: https://diabetesatlas.org/
+
+\bibitem{who2016}
+World Health Organization, ``Global Report on Diabetes,'' WHO Press, Geneva, 2016.
+
+\bibitem{kavakiotis2017}
+I. Kavakiotis, O. Tsave, A. Salifoglou, N. Maglaveras, I. Vlahavas, and I. Chouvarda, ``Machine Learning and Data Mining Methods in Diabetes Research,'' \textit{Computational and Structural Biotechnology Journal}, vol. 15, pp. 104--116, 2017.
+
+\bibitem{zou2018}
+Q. Zou, K. Qu, Y. Luo, D. Yin, Y. Ju, and H. Tang, ``Predicting Diabetes Mellitus With Machine Learning Techniques,'' \textit{Frontiers in Genetics}, vol. 9, p. 515, 2018.
+
+\bibitem{sisodia2018}
+D. Sisodia and D. S. Sisodia, ``Prediction of Diabetes using Classification Algorithms,'' \textit{Procedia Computer Science}, vol. 132, pp. 1578--1585, 2018.
+
+\bibitem{chen2016}
+T. Chen and C. Guestrin, ``XGBoost: A Scalable Tree Boosting System,'' in \textit{Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining}, pp. 785--794, 2016.
+
+\bibitem{ogunleye2020}
+A. Ogunleye and Q.-G. Wang, ``XGBoost Model for Chronic Kidney Disease Diagnosis,'' \textit{IEEE/ACM Transactions on Computational Biology and Bioinformatics}, vol. 17, no. 6, pp. 2131--2140, 2020.
+
+\bibitem{chawla2002}
+N. V. Chawla, K. W. Bowyer, L. O. Hall, and W. P. Kegelmeyer, ``SMOTE: Synthetic Minority Over-sampling Technique,'' \textit{Journal of Artificial Intelligence Research}, vol. 16, pp. 321--357, 2002.
+
+\bibitem{breiman2001}
+L. Breiman, ``Random Forests,'' \textit{Machine Learning}, vol. 45, no. 1, pp. 5--32, 2001.
+
+\bibitem{cortes1995}
+C. Cortes and V. Vapnik, ``Support-Vector Networks,'' \textit{Machine Learning}, vol. 20, no. 3, pp. 273--297, 1995.
+
+\end{thebibliography}
+
+\end{document}
