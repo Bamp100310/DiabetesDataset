@@ -20,6 +20,9 @@ warnings.filterwarnings("ignore")
 plt.style.use("seaborn-v0_8-whitegrid")
 plt.rcParams.update({"figure.dpi": 150, "savefig.dpi": 300})
 
+XGB_SEARCH_ITER = 5
+XGB_CV_FOLDS = 3
+
 
 def load_processed_data(project_dir):
     processed_dir = os.path.join(project_dir, "data", "processed")
@@ -37,9 +40,9 @@ def train_model(X_train, y_train):
     spw = n_neg / n_pos if n_pos > 0 else 1.0
 
     param_dist = {
-        "n_estimators": [100, 200, 300, 500, 700],
-        "max_depth": [3, 5, 7, 9, 11],
-        "learning_rate": [0.01, 0.05, 0.1, 0.2],
+        "n_estimators": [100, 200, 300],
+        "max_depth": [3, 5, 7],
+        "learning_rate": [0.05, 0.1, 0.2],
         "subsample": [0.7, 0.8, 0.9, 1.0],
         "colsample_bytree": [0.7, 0.8, 0.9, 1.0],
         "min_child_weight": [1, 3, 5],
@@ -49,15 +52,15 @@ def train_model(X_train, y_train):
 
     xgb = XGBClassifier(
         random_state=42, scale_pos_weight=spw,
-        eval_metric="logloss", use_label_encoder=False, n_jobs=-1,
+        eval_metric="logloss", tree_method="hist", n_jobs=1,
     )
 
     search = RandomizedSearchCV(
-        xgb, param_dist, n_iter=40, cv=3, scoring="f1",
-        random_state=42, n_jobs=-1, verbose=1,
+        xgb, param_dist, n_iter=XGB_SEARCH_ITER, cv=XGB_CV_FOLDS, scoring="f1",
+        random_state=42, n_jobs=1, verbose=1,
     )
 
-    print("Buscando hiperparametros (40 iter, 3-fold)...")
+    print(f"Buscando hiperparametros ({XGB_SEARCH_ITER} iter, {XGB_CV_FOLDS}-fold)...")
     t0 = time.time()
     search.fit(X_train, y_train)
     elapsed = time.time() - t0
@@ -137,10 +140,10 @@ def evaluate_model(model, X_test, y_test, feature_names, figures_dir):
 
 
 def cross_validation(model, X_train, y_train):
-    print("Validacion cruzada 5-fold:")
+    print(f"Validacion cruzada {XGB_CV_FOLDS}-fold:")
     cv_results = {}
     for metric in ["accuracy", "precision", "recall", "f1", "roc_auc"]:
-        scores = cross_val_score(model, X_train, y_train, cv=5, scoring=metric, n_jobs=-1)
+        scores = cross_val_score(model, X_train, y_train, cv=XGB_CV_FOLDS, scoring=metric, n_jobs=1)
         cv_results[metric] = {"mean": scores.mean(), "std": scores.std(), "scores": scores}
         print(f"  {metric}: {scores.mean():.4f} +/- {scores.std():.4f}")
     return cv_results
